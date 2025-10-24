@@ -1,0 +1,6 @@
+#+title: readme
+
+This is not an lsp server for jai, but a binding to the language
+server protocol according to the specifications.
+
+The current supported version is 3.17.0.
