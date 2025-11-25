@@ -1,3 +1,6 @@
 [submodule "modules/Json"]
 	path = modules/Json
 	url = https://github.com/drshapeless/json-parser.git
+[submodule "modules/Anyx"]
+	path = modules/Anyx
+	url = https://github.com/drshapeless/Anyx.git
