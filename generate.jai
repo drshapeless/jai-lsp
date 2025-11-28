@@ -282,11 +282,137 @@ generate_property_type :: (j: Json_Any) -> *LSP_Type {
     return t;
 }
 
-lsp_type_to_string_base :: (t: *LSP_Type) -> string, bool {
+lsp_type_to_string :: (t: *LSP_Type, optional: bool = false) -> string {
+    s: string;
+
+    if t.kind == .OR {
+        s = lsp_type_to_string_or(t, optional);
+    } else if optional {
+        sb: String_Builder;
+        append(*sb, "Anyx = .{optional = true, accepted_types = .[type_info(");
+        if t.kind == {
+        case .BASE;
+            append(*sb, lsp_type_to_string_base(t));
+
+        case .REFERENCE;
+            append(*sb, lsp_type_to_string_reference(t));
+
+        case .ARRAY;
+            append(*sb, lsp_type_to_string_array(t));
+
+        case .MAP;
+            append(*sb, lsp_type_to_string_map(t));
+        }
+
+        append(*sb, ")]}");
+        s = builder_to_string(*sb);
+    } else {
+        if t.kind == {
+        case .BASE;
+            s = lsp_type_to_string_base(t);
+        case .REFERENCE;
+            s = lsp_type_to_string_reference(t);
+        case .ARRAY;
+            s = lsp_type_to_string_array(t);
+        case .MAP;
+            s = lsp_type_to_string_map(t);
+        }
+    }
+
+    return s;
+}
+
+lsp_type_to_string_base :: (t: *LSP_Type) -> string {
     tt := cast(*LSP_Type_Base);
+
+    return tt.name;
+}
+
+lsp_type_to_string_reference :: (t: *LSP_Type) -> string {
+    tt := cast(*LSP_Type_Reference);
+
+    return tt.name;
+}
+
+lsp_type_to_string_array :: (t: *LSP_Type) -> string {
+    tt := cast(*LSP_Type_Array);
+
+    assert(tt.kind == .BASE || tt.kind == .REFERENCE, "Weird element in array, %", tt.kind);
+
+    s: string;
+    if tt.element.kind == {
+    case .BASE;
+        s = sprint("[]%", lsp_type_to_string_base(tt.element));
+    case .REFERENCE;
+        s = sprint("[]%", lsp_type_to_string_reference(tt.element));
+    }
+
+    return s;
+}
+
+lsp_type_to_string_map :: (t: *LSP_Type) -> string {
+    tt := cast(*LSP_Type_Map);
+
+    assert(tt.key.kind == .BASE, "Map doesn't only have base as key, %", tt.key.kind);
+
+    sb: String_Builder;
+    append(*sb, "Table(");
+    append(*sb, lsp_type_to_string_base(tt.key));
+    append(*sb, ", ");
+
+    if tt.key.kind == .OR {
+        // This is a disaster, I don't have a good way to make this work.
+
+        // Currently I create a new struct in place with default Anyx
+        // value and hoping everything would be right.
+        append(*sb, "Map_Value);\n");
+        append(*sb, "    Map_Value :: struct {\n");
+        append(*sb, "        value: ");
+        append(*sb, lsp_type_to_string_or(tt.value));
+        append(*sb, "\n    }");
+
+        // TODO: But this results in an extra semi-colon at the end.
+    } else {
+        append(*sb, lsp_type_to_string(tt.value));
+        append(*sb, ")");
+    }
+
+    return builder_to_string(*sb);
+}
+
+lsp_type_to_string_or :: (t: *LSP_Type, optional: bool) -> string {
+    tt := cast(*LSP_Type_Or);
     if tt == null return "", false;
 
-    return tt.name, true;
+    sb: String_Builder;
+    append(*sb, "Anyx = .{");
+    if optional {
+        append(*sb, "optional = true, ")
+    }
+
+    append(*sb, "accepted_types = .[");
+    for tt.items {
+        append(*sb, "type_info(");
+        if it.kind == {
+        case .BASE;
+            append(*sb, lsp_type_to_string_base(it));
+        case .REFERENCE;
+            append(*sb, lsp_type_to_string_reference(it));
+        case .ARRAY;
+            append(*sb, lsp_type_to_string_array(it));
+        case .MAP;
+            assert(false, "Wait, or type has a map?");
+        case;
+            assert(false, "Weird type in or type, %", it.kind);
+        }
+        append(*sb, ")");
+
+        if it_index != tt.items.count - 1 {
+            append(*sb, ", ");
+        }
+    }
+
+    append(*sb, "]}");
 }
 
 #import "Basic";
