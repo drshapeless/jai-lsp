@@ -147,30 +147,26 @@ write_structures :: () {
             append(*sb, "    ");
             append(*sb, p.name);
             append(*sb, ": ");
-
             if p.optional {
-                append(*sb, "Anyx = .{optional = true, accepted_types = .[");
 
-                if p.accepted_types.count == 0 {
-                    append(*sb, "type_info(");
-                    append(*sb, p.type);
-                    append(*sb, ")");
-                } else {
-                    for p.accepted_types {
-                        append(*sb, "type_info(");
-                        append(*sb, it);
-                        append(*sb, ")");
-
-                        if it_index != p.accepted_types.count - 1 {
-                            append(*sb, ", ");
-                        }
-                    }
-                }
-
-                append(*sb, "]};\n");
             } else {
-                append(*sb, p.type);
-                append(*sb, ";\n");
+                if #complete p.type.type == {
+                case .BASE;
+                    t_b := cast(*LSP_Type_Base)p.type;
+                    append(*sb, t_b.name);
+
+                case .REFERENCE;
+                    t_r := cast(*LSP_Type_Reference)p.type;
+                    append(*sb, t_r.name);
+
+                case .OR;
+                    t_o := cast(*LSP_Type_Or)p.type;
+                    append(*sb, "Anyx = .{ accepted_types = .[");
+                    for t_o.items {
+
+                    }
+                    append(*sb, "]}")
+                }
             }
         }
 
@@ -266,9 +262,31 @@ generate_property_type :: (j: Json_Any) -> *LSP_Type {
 
             t = t_a;
         }
+
+    case "map";
+        t_m := New(LSP_Type_Map);
+        key, ok0 := json_get(j, "key");
+        if !ok0 return null;
+
+        ttk := generate_property_type(key);
+        if ttk == null return null;
+        t_m.key = ttk;
+
+        value, ok1 := json_get(j, "value");
+        if !ok1 return null;
+        ttv := generate_property_type(value);
+        if ttv == null return null;
+        t_m.value = ttv;
     }
 
     return t;
+}
+
+lsp_type_to_string_base :: (t: *LSP_Type) -> string, bool {
+    tt := cast(*LSP_Type_Base);
+    if tt == null return "", false;
+
+    return tt.name, true;
 }
 
 #import "Basic";
