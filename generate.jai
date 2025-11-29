@@ -380,9 +380,8 @@ lsp_type_to_string_map :: (t: *LSP_Type) -> string {
     return builder_to_string(*sb);
 }
 
-lsp_type_to_string_or :: (t: *LSP_Type, optional: bool) -> string {
+lsp_type_to_string_or :: (t: *LSP_Type, optional: bool = false) -> string {
     tt := cast(*LSP_Type_Or);
-    if tt == null return "", false;
 
     sb: String_Builder;
     append(*sb, "Anyx = .{");
