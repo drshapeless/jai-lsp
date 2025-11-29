@@ -4,3 +4,88 @@ This is not an lsp server for jai, but a binding to the language
 server protocol according to the specifications.
 
 The current supported version is 3.17.0.
+
+* Weird struct
+There are two weird struct which is hard to translate into Jai, which
+are ~DocumentDiagnosticReportPartialResult~ and
+~RelatedFullDocumentDiagnosticReport~.
+
+~DocumentDiagnosticReportPartialResult~
+#+begin_src json
+  {
+      "name": "DocumentDiagnosticReportPartialResult",
+      "properties": [
+        {
+            "name": "relatedDocuments",
+            "type": {
+                "kind": "map",
+                "key": {
+                    "kind": "base",
+                    "name": "DocumentUri"
+                },
+                "value": {
+                    "kind": "or",
+                    "items": [
+                        {
+                            "kind": "reference",
+                            "name": "FullDocumentDiagnosticReport"
+                        },
+                        {
+                            "kind": "reference",
+                            "name": "UnchangedDocumentDiagnosticReport"
+                        }
+                    ]
+                }
+            }
+        }
+      ],
+      "documentation": "A partial result for a document diagnostic report.\n\n@since 3.17.0",
+      "since": "3.17.0"
+  }
+#+end_src
+
+~RelatedFullDocumentDiagnosticReport~
+#+begin_src json
+  {
+      "name": "RelatedFullDocumentDiagnosticReport",
+      "properties": [
+        {
+            "name": "relatedDocuments",
+            "type": {
+                "kind": "map",
+                "key": {
+                    "kind": "base",
+                    "name": "DocumentUri"
+                },
+                "value": {
+                    "kind": "or",
+                    "items": [
+                        {
+                            "kind": "reference",
+                            "name": "FullDocumentDiagnosticReport"
+                        },
+                        {
+                            "kind": "reference",
+                            "name": "UnchangedDocumentDiagnosticReport"
+                        }
+                    ]
+                }
+            },
+            "optional": true,
+            "documentation": "Diagnostics of related documents. This information is useful\nin programming languages where code in a file A can generate\ndiagnostics in a file B which A depends on. An example of\nsuch a language is C/C++ where marco definitions in a file\na.cpp and result in errors in a header file b.hpp.\n\n@since 3.17.0",
+            "since": "3.17.0"
+        }
+      ],
+      "extends": [
+        {
+            "kind": "reference",
+            "name": "FullDocumentDiagnosticReport"
+        }
+      ],
+      "documentation": "A full diagnostic report with a set of related documents.\n\n@since 3.17.0",
+      "since": "3.17.0"
+  }
+#+end_src
+
+They both have a property of a map where its value is a ~or~ type. In
+Jai, we want to use a Hash Table to represent.
